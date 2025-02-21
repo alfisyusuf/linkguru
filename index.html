@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Link Guru - PSTS & PSAS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #000000;
+            --primary: #00ff94;
+            --secondary: #00b368;
+            --text: #ffffff;
+            --link-bg: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            background: var(--bg-color);
+            color: var(--text);
+            font-family: 'system-ui', sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(to bottom, #000000, #111111);
+        }
+
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        .profile-section {
+            padding: 4rem 0 2rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .profile-image {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            margin: 0 auto 1.5rem;
+            position: relative;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            padding: 4px;
+        }
+
+        .profile-image img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid black;
+        }
+
+        .profile-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--primary), #ffffff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .profile-description {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto 2rem;
+        }
+
+        .links-container {
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            position: relative;
+        }
+
+        .link-card {
+            background: var(--link-bg);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 1rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .link-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transform: translateX(-100%);
+            transition: 0.5s;
+        }
+
+        .link-card:hover::before {
+            transform: translateX(100%);
+        }
+
+        .link-card:hover {
+            transform: scale(1.02);
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(0, 255, 148, 0.2);
+        }
+
+        .link-content {
+            padding: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .link-title {
+            color: var(--text);
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin: 0;
+        }
+
+        .link-arrow {
+            color: var(--primary);
+            font-size: 1.2rem;
+            transition: transform 0.3s ease;
+        }
+
+        .link-card:hover .link-arrow {
+            transform: translateX(5px);
+        }
+
+        .loading-spinner {
+            display: none;
+            padding: 2rem;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading-spinner.active {
+            display: flex;
+        }
+
+        .spinner-border {
+            color: var(--primary);
+        }
+
+        @media (max-width: 768px) {
+            .profile-title {
+                font-size: 2rem;
+            }
+
+            .profile-image {
+                width: 100px;
+                height: 100px;
+            }
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .floating {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 2rem 0;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="particles" id="particles-js"></div>
+
+    <div class="profile-section">
+        <div class="profile-image floating">
+            <img src="./SMA_ABBS.png" alt="Link Guru">
+        </div>
+        <h1 class="profile-title">Link Guru</h1>
+        <p class="profile-description">Akses mudah ke semua tautan terkait PSTS & PSAS</p>
+    </div>
+
+    <div class="loading-spinner active">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+    <div class="links-container" id="linkContainer"></div>
+
+    <footer class="footer">
+        © 2025 Tim IT - PSTS & PSAS
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
+    <script>
+        // Particle.js configuration
+        particlesJS("particles-js", {
+            particles: {
+                number: { value: 80, density: { enable: true, value_area: 800 } },
+                color: { value: "#00ff94" },
+                shape: { type: "circle" },
+                opacity: {
+                    value: 0.5,
+                    random: true,
+                    animation: { enable: true, speed: 1, minimumValue: 0.1, sync: false }
+                },
+                size: {
+                    value: 3,
+                    random: true,
+                    animation: { enable: true, speed: 2, minimumValue: 0.1, sync: false }
+                },
+                line_linked: {
+                    enable: true,
+                    distance: 150,
+                    color: "#00ff94",
+                    opacity: 0.2,
+                    width: 1
+                },
+                move: {
+                    enable: true,
+                    speed: 1,
+                    direction: "none",
+                    random: true,
+                    straight: false,
+                    out_mode: "out",
+                    bounce: false,
+                }
+            },
+            interactivity: {
+                detect_on: "canvas",
+                events: {
+                    onhover: { enable: true, mode: "repulse" },
+                    onclick: { enable: true, mode: "push" },
+                    resize: true
+                },
+                modes: {
+                    repulse: { distance: 100, duration: 0.4 },
+                    push: { particles_nb: 4 }
+                }
+            },
+            retina_detect: true
+        });
+
+        async function fetchLinks() {
+            try {
+                const response = await fetch('https://script.google.com/macros/s/AKfycbzsRZCZMRkF86ZsQnr09C1kXTxH9Ia3fgDKC1h9sKsjkx2MuHI-yuOcedN2hvMNHdlN/exec');
+                const data = await response.json();
+                
+                const container = document.getElementById('linkContainer');
+                const loadingSpinner = document.querySelector('.loading-spinner');
+                loadingSpinner.classList.remove('active');
+
+                const filteredData = data.filter(item => item.Sasaran.toLowerCase() === 'guru');
+                
+                container.innerHTML = filteredData.map((item, index) => `
+                    <div class="link-card" style="animation: fadeIn 0.5s ease-out ${index * 0.1}s forwards; opacity: 0;">
+                        <a href="${item.Link}" class="link-content text-decoration-none" target="_blank">
+                            <h3 class="link-title">${item.Judul}</h3>
+                            <i class="fas fa-arrow-right link-arrow"></i>
+                        </a>
+                    </div>
+                `).join('');
+
+                const style = document.createElement('style');
+                style.textContent = `
+                    @keyframes fadeIn {
+                        from { 
+                            opacity: 0;
+                            transform: translateY(20px);
+                        }
+                        to { 
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
+
+            } catch (error) {
+                console.error('Error fetching links:', error);
+                document.getElementById('linkContainer').innerHTML = `
+                    <div class="link-card">
+                        <div class="link-content">
+                            <div class="alert alert-danger m-0" role="alert">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                Terjadi kesalahan saat memuat data. Silakan coba lagi nanti.
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        fetchLinks();
+    </script>
+</body>
+</html>
