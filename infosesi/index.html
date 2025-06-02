@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard Guru - Monitor Sesi Ujian</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          animation: {
+            'fade-in': 'fadeIn 0.5s ease-in-out',
+            'slide-up': 'slideUp 0.3s ease-out',
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'bounce-slow': 'bounce 2s infinite',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
+  <!-- Header -->
+  <header class="bg-white shadow-lg border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center py-6">
+        <div class="flex items-center space-x-4">
+          <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-3 rounded-xl">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900">Dashboard Guru</h1>
+            <p class="text-gray-600">Monitor Sesi Ujian Real-time</p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <button id="refreshBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-all duration-200 transform hover:scale-105">
+            <svg id="refreshIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            <span>Refresh</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Status Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <!-- Current Time Card -->
+      <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Waktu Server</p>
+            <p id="currentTime" class="text-2xl font-bold text-gray-900 font-mono">--:--:--</p>
+            <p id="currentDate" class="text-sm text-gray-500">Loading...</p>
+          </div>
+          <div class="bg-blue-100 p-3 rounded-full">
+            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Sessions Card -->
+      <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Sesi Aktif</p>
+            <p id="activeSessions" class="text-2xl font-bold text-green-600">0</p>
+            <p class="text-sm text-gray-500">Sedang berlangsung</p>
+          </div>
+          <div class="bg-green-100 p-3 rounded-full">
+            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upcoming Sessions Card -->
+      <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Sesi Mendatang</p>
+            <p id="upcomingSessions" class="text-2xl font-bold text-yellow-600">0</p>
+            <p class="text-sm text-gray-500">Akan dimulai</p>
+          </div>
+          <div class="bg-yellow-100 p-3 rounded-full">
+            <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Completed Sessions Card -->
+      <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Sesi Selesai</p>
+            <p id="completedSessions" class="text-2xl font-bold text-gray-600">0</p>
+            <p class="text-sm text-gray-500">Sudah berakhir</p>
+          </div>
+          <div class="bg-gray-100 p-3 rounded-full">
+            <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Sessions Alert -->
+    <div id="activeAlert" class="hidden mb-6">
+      <div class="bg-green-50 border-l-4 border-green-400 p-4 rounded-r-lg animate-pulse-slow">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm text-green-700 font-medium">
+              Ada sesi ujian yang sedang berlangsung! Pastikan siswa dapat mengakses dengan password yang benar.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sessions Table -->
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
+      <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-semibold text-gray-900">Daftar Sesi Ujian</h2>
+          <div class="flex items-center space-x-2">
+            <span class="text-sm text-gray-500">Auto-refresh setiap 30 detik</span>
+            <div id="autoRefreshIndicator" class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div id="loadingState" class="p-8 text-center">
+        <div class="inline-flex items-center space-x-2">
+          <svg class="animate-spin h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span class="text-gray-600">Memuat data sesi ujian...</span>
+        </div>
+      </div>
+
+      <!-- Sessions Table Content -->
+      <div id="sessionsTable" class="hidden">
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mata Pelajaran</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Password</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="sessionsTableBody" class="bg-white divide-y divide-gray-200">
+              <!-- Table rows will be inserted here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div id="emptyState" class="hidden p-8 text-center">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">Tidak ada sesi ujian</h3>
+        <p class="mt-1 text-sm text-gray-500">Belum ada sesi ujian yang terdaftar.</p>
+      </div>
+    </div>
+
+    <!-- Error State -->
+    <div id="errorState" class="hidden mt-6">
+      <div class="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-red-800">Error memuat data</h3>
+            <p id="errorMessage" class="mt-1 text-sm text-red-700"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Password Modal -->
+  <div id="passwordModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+          <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100">
+            <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-11.83 1M9 7a2 2 0 012 2m4 0a6 6 0 01-11.83 1"></path>
+            </svg>
+          </div>
+          <h3 class="text-lg leading-6 font-medium text-gray-900 mt-2">Password Sesi</h3>
+          <div class="mt-4 px-7 py-3">
+            <div class="bg-gray-50 rounded-lg p-4 space-y-3">
+              <div class="flex justify-between items-center">
+                <span class="text-sm font-medium text-gray-600">Password Masuk:</span>
+                <div class="flex items-center space-x-2">
+                  <code id="modalPasswordMasuk" class="bg-blue-100 text-blue-800 px-3 py-1 rounded font-mono text-lg"></code>
+                  <button onclick="copyToClipboard('modalPasswordMasuk')" class="text-blue-600 hover:text-blue-800">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-sm font-medium text-gray-600">Password Keluar:</span>
+                <div class="flex items-center space-x-2">
+                  <code id="modalPasswordKeluar" class="bg-red-100 text-red-800 px-3 py-1 rounded font-mono text-lg"></code>
+                  <button onclick="copyToClipboard('modalPasswordKeluar')" class="text-red-600 hover:text-red-800">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="items-center px-4 py-3">
+            <button id="closeModal" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+              Tutup
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 z-50">
+      <div class="flex items-center space-x-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <span id="toastMessage">Password berhasil disalin!</span>
+      </div>
+    </div>
+  
+    <script>
+      const urlJSON = 'https://script.google.com/macros/s/AKfycbysp3rSNRASlJfMsEzCKxntLjDBcl_DYFiqADTmeVGIZHwDoT-QVIgELMO6_wUpDLNFAw/exec?sheet=SessionList';
+      
+      // Multiple time API sources
+      const timeAPIs = [
+        'https://worldtimeapi.org/api/timezone/Asia/Jakarta',
+        'https://timeapi.io/api/Time/current/zone?timeZone=Asia/Jakarta',
+        'http://worldclockapi.com/api/json/asia/jakarta/now'
+      ];
+  
+      let sessions = [];
+      let serverTime = null;
+      let timeOffset = 0;
+      let refreshInterval = null;
+      let timeInterval = null;
+  
+      // DOM Elements
+      const currentTimeEl = document.getElementById('currentTime');
+      const currentDateEl = document.getElementById('currentDate');
+      const activeSessionsEl = document.getElementById('activeSessions');
+      const upcomingSessionsEl = document.getElementById('upcomingSessions');
+      const completedSessionsEl = document.getElementById('completedSessions');
+      const activeAlertEl = document.getElementById('activeAlert');
+      const loadingStateEl = document.getElementById('loadingState');
+      const sessionsTableEl = document.getElementById('sessionsTable');
+      const sessionsTableBodyEl = document.getElementById('sessionsTableBody');
+      const emptyStateEl = document.getElementById('emptyState');
+      const errorStateEl = document.getElementById('errorState');
+      const errorMessageEl = document.getElementById('errorMessage');
+      const refreshBtn = document.getElementById('refreshBtn');
+      const refreshIcon = document.getElementById('refreshIcon');
+      const passwordModal = document.getElementById('passwordModal');
+      const closeModal = document.getElementById('closeModal');
+      const toast = document.getElementById('toast');
+  
+      // Parse date string with multiple formats
+      function parseDateTime(dateString) {
+        const cleanDateString = dateString.trim();
+        
+        const formats = [
+          () => new Date(cleanDateString.replace(' ', 'T')),
+          () => new Date(cleanDateString),
+          () => {
+            const match = cleanDateString.match(/(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})/);
+            if (match) {
+              const [, year, month, day, hour, minute, second] = match;
+              return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), 
+                            parseInt(hour), parseInt(minute), parseInt(second));
+            }
+            return null;
+          }
+        ];
+  
+        for (const formatFn of formats) {
+          try {
+            const date = formatFn();
+            if (date && !isNaN(date.getTime())) {
+              return date;
+            }
+          } catch (e) {
+            continue;
+          }
+        }
+        return null;
+      }
+  
+      // Get current server time
+      function getCurrentServerTime() {
+        return new Date(Date.now() + timeOffset);
+      }
+  
+      // Update time display
+      function updateTimeDisplay() {
+        const now = getCurrentServerTime();
+        currentTimeEl.textContent = now.toLocaleTimeString('id-ID', {
+          timeZone: 'Asia/Jakarta',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        });
+        currentDateEl.textContent = now.toLocaleDateString('id-ID', {
+          timeZone: 'Asia/Jakarta',
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+      }
+  
+      // Fetch server time
+      async function fetchServerTime() {
+        for (const apiUrl of timeAPIs) {
+          try {
+            const res = await fetch(apiUrl);
+            if (!res.ok) continue;
+            
+            const data = await res.json();
+            let serverDateTime;
+  
+            if (data.datetime) {
+              serverDateTime = new Date(data.datetime);
+            } else if (data.dateTime) {
+              serverDateTime = new Date(data.dateTime);
+            } else if (data.currentDateTime) {
+              serverDateTime = new Date(data.currentDateTime);
+            }
+  
+            if (serverDateTime && !isNaN(serverDateTime.getTime())) {
+              timeOffset = serverDateTime.getTime() - Date.now();
+              return serverDateTime;
+            }
+          } catch (e) {
+            continue;
+          }
+        }
+        
+        timeOffset = 0;
+        return new Date();
+      }
+  
+      // Fetch sessions
+      async function fetchSessions() {
+        const res = await fetch(urlJSON);
+        if (!res.ok) throw new Error('Gagal memuat data sesi');
+        return res.json();
+      }
+  
+      // Get session status
+      function getSessionStatus(session) {
+        const now = getCurrentServerTime();
+        const start = parseDateTime(session['Waktu Mulai']);
+        const end = parseDateTime(session['Waktu Selesai']);
+  
+        if (!start || !end) return 'invalid';
+        
+        if (now < start) return 'upcoming';
+        if (now >= start && now <= end) return 'active';
+        return 'completed';
+      }
+  
+      // Format time remaining
+      function getTimeRemaining(targetTime) {
+        const now = getCurrentServerTime();
+        const diff = targetTime - now;
+        
+        if (diff <= 0) return 'Sudah berlalu';
+        
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        
+        if (hours > 0) {
+          return `${hours} jam ${minutes} menit`;
+        }
+        return `${minutes} menit`;
+      }
+  
+      // Show password modal
+      function showPasswordModal(session) {
+        document.getElementById('modalPasswordMasuk').textContent = session['Password Masuk'];
+        document.getElementById('modalPasswordKeluar').textContent = session['Password Keluar'];
+        passwordModal.classList.remove('hidden');
+      }
+  
+      // Copy to clipboard
+      function copyToClipboard(elementId) {
+        const element = document.getElementById(elementId);
+        const text = element.textContent;
+        
+        navigator.clipboard.writeText(text).then(() => {
+          showToast('Password berhasil disalin!');
+        }).catch(() => {
+          // Fallback for older browsers
+          const textArea = document.createElement('textarea');
+          textArea.value = text;
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+          showToast('Password berhasil disalin!');
+        });
+      }
+  
+      // Show toast notification
+      function showToast(message) {
+        document.getElementById('toastMessage').textContent = message;
+        toast.classList.remove('translate-x-full');
+        setTimeout(() => {
+          toast.classList.add('translate-x-full');
+        }, 3000);
+      }
+  
+      // Render sessions table
+      function renderSessions() {
+        if (!sessions.length) {
+          loadingStateEl.classList.add('hidden');
+          sessionsTableEl.classList.add('hidden');
+          emptyStateEl.classList.remove('hidden');
+          return;
+        }
+  
+        const now = getCurrentServerTime();
+        let activeCount = 0;
+        let upcomingCount = 0;
+        let completedCount = 0;
+  
+        const tableRows = sessions.map(session => {
+          const status = getSessionStatus(session);
+          const start = parseDateTime(session['Waktu Mulai']);
+          const end = parseDateTime(session['Waktu Selesai']);
+  
+          // Count sessions by status
+          if (status === 'active') activeCount++;
+          else if (status === 'upcoming') upcomingCount++;
+          else if (status === 'completed') completedCount++;
+  
+          // Status badge
+          let statusBadge = '';
+          let timeInfo = '';
+          
+          switch (status) {
+            case 'active':
+              statusBadge = `
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 animate-pulse">
+                  <span class="w-2 h-2 bg-green-400 rounded-full mr-1 animate-bounce"></span>
+                  Aktif
+                </span>`;
+              timeInfo = `Berakhir dalam ${getTimeRemaining(end)}`;
+              break;
+            case 'upcoming':
+              statusBadge = `
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                  <span class="w-2 h-2 bg-yellow-400 rounded-full mr-1"></span>
+                  Mendatang
+                </span>`;
+              timeInfo = `Dimulai dalam ${getTimeRemaining(start)}`;
+              break;
+            case 'completed':
+              statusBadge = `
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                  <span class="w-2 h-2 bg-gray-400 rounded-full mr-1"></span>
+                  Selesai
+                </span>`;
+              timeInfo = 'Sudah berakhir';
+              break;
+            default:
+              statusBadge = `
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                  Error
+                </span>`;
+              timeInfo = 'Format waktu tidak valid';
+          }
+  
+          const passwordDisplay = status === 'active' ? 
+            `<div class="space-y-1">
+              <div class="flex items-center space-x-2">
+                <span class="text-xs text-gray-500">Masuk:</span>
+                <code class="bg-green-100 text-green-800 px-2 py-1 rounded text-sm font-mono">${session['Password Masuk']}</code>
+              </div>
+              <div class="flex items-center space-x-2">
+                <span class="text-xs text-gray-500">Keluar:</span>
+              <code class="bg-red-100 text-red-800 px-2 py-1 rounded text-sm font-mono">${session['Password Keluar']}</code>
+            </div>
+          </div>` :
+          `<button onclick="showPasswordModal(${JSON.stringify(session).replace(/"/g, '&quot;')})" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+            Lihat Password
+          </button>`;
+
+        const actionButton = status === 'active' ? 
+          `<div class="flex space-x-2">
+            <a href="${session['URL Ujian']}" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors">
+              Buka Ujian
+            </a>
+            <button onclick="copyToClipboard('password-${session['Sesi ID']}-masuk')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors">
+              Copy
+            </button>
+          </div>` :
+          `<button onclick="showPasswordModal(${JSON.stringify(session).replace(/"/g, '&quot;')})" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-colors">
+            Detail
+          </button>`;
+
+        return `
+          <tr class="hover:bg-gray-50 transition-colors animate-slide-up">
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex flex-col space-y-1">
+                ${statusBadge}
+                <span class="text-xs text-gray-500">${timeInfo}</span>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex flex-col">
+                <div class="text-sm font-medium text-gray-900">${session['Mata Pelajaran']}</div>
+                <div class="text-sm text-gray-500">Sesi ID: ${session['Sesi ID']}</div>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900">
+                <div class="flex items-center space-x-1 mb-1">
+                  <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <span>${start ? start.toLocaleString('id-ID', {timeZone: 'Asia/Jakarta'}) : 'Invalid'}</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <span>${end ? end.toLocaleString('id-ID', {timeZone: 'Asia/Jakarta'}) : 'Invalid'}</span>
+                </div>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              ${passwordDisplay}
+              <div class="hidden">
+                <span id="password-${session['Sesi ID']}-masuk">${session['Password Masuk']}</span>
+                <span id="password-${session['Sesi ID']}-keluar">${session['Password Keluar']}</span>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              ${actionButton}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // Update counters
+      activeSessionsEl.textContent = activeCount;
+      upcomingSessionsEl.textContent = upcomingCount;
+      completedSessionsEl.textContent = completedCount;
+
+      // Show/hide active alert
+      if (activeCount > 0) {
+        activeAlertEl.classList.remove('hidden');
+      } else {
+        activeAlertEl.classList.add('hidden');
+      }
+
+      // Update table
+      sessionsTableBodyEl.innerHTML = tableRows;
+      loadingStateEl.classList.add('hidden');
+      sessionsTableEl.classList.remove('hidden');
+      emptyStateEl.classList.add('hidden');
+      errorStateEl.classList.add('hidden');
+    }
+
+    // Load data
+    async function loadData() {
+      try {
+        loadingStateEl.classList.remove('hidden');
+        sessionsTableEl.classList.add('hidden');
+        emptyStateEl.classList.add('hidden');
+        errorStateEl.classList.add('hidden');
+
+        const [sessionsData, serverTimeData] = await Promise.all([
+          fetchSessions(),
+          fetchServerTime()
+        ]);
+
+        sessions = sessionsData;
+        serverTime = serverTimeData;
+
+        renderSessions();
+      } catch (error) {
+        console.error('Error loading data:', error);
+        loadingStateEl.classList.add('hidden');
+        sessionsTableEl.classList.add('hidden');
+        emptyStateEl.classList.add('hidden');
+        errorStateEl.classList.remove('hidden');
+        errorMessageEl.textContent = error.message;
+      }
+    }
+
+    // Refresh data with animation
+    async function refreshData() {
+      refreshIcon.classList.add('animate-spin');
+      refreshBtn.disabled = true;
+      
+      try {
+        await loadData();
+        showToast('Data berhasil diperbarui!');
+      } catch (error) {
+        showToast('Gagal memperbarui data!');
+      } finally {
+        refreshIcon.classList.remove('animate-spin');
+        refreshBtn.disabled = false;
+      }
+    }
+
+    // Event listeners
+    refreshBtn.addEventListener('click', refreshData);
+    
+    closeModal.addEventListener('click', () => {
+      passwordModal.classList.add('hidden');
+    });
+
+    passwordModal.addEventListener('click', (e) => {
+      if (e.target === passwordModal) {
+        passwordModal.classList.add('hidden');
+      }
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      // ESC to close modal
+      if (e.key === 'Escape') {
+        passwordModal.classList.add('hidden');
+      }
+      
+      // F5 or Ctrl+R to refresh
+      if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
+        e.preventDefault();
+        refreshData();
+      }
+    });
+
+    // Auto-refresh every 30 seconds
+    function startAutoRefresh() {
+      refreshInterval = setInterval(() => {
+        loadData();
+      }, 30000);
+    }
+
+    function stopAutoRefresh() {
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+        refreshInterval = null;
+      }
+    }
+
+    // Start time update interval
+    function startTimeUpdate() {
+      timeInterval = setInterval(updateTimeDisplay, 1000);
+    }
+
+    function stopTimeUpdate() {
+      if (timeInterval) {
+        clearInterval(timeInterval);
+        timeInterval = null;
+      }
+    }
+
+    // Page visibility handling
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        stopAutoRefresh();
+        stopTimeUpdate();
+      } else {
+        startAutoRefresh();
+        startTimeUpdate();
+        // Refresh data when page becomes visible again
+        loadData();
+      }
+    });
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+      stopAutoRefresh();
+      stopTimeUpdate();
+    });
+
+    // Initialize
+    async function init() {
+      await loadData();
+      startTimeUpdate();
+      startAutoRefresh();
+      updateTimeDisplay();
+    }
+
+    // Start the application
+    init();
+
+    // Make functions globally available for onclick handlers
+    window.showPasswordModal = showPasswordModal;
+    window.copyToClipboard = copyToClipboard;
+
+    // Add some CSS animations for better UX
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      
+      .animate-slide-up {
+        animation: slideUp 0.3s ease-out;
+      }
+      
+      .table-row-enter {
+        animation: slideUp 0.3s ease-out;
+      }
+      
+      /* Custom scrollbar */
+      .overflow-x-auto::-webkit-scrollbar {
+        height: 6px;
+      }
+      
+      .overflow-x-auto::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+      }
+      
+      .overflow-x-auto::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 3px;
+      }
+      
+      .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+      }
+    `;
+    document.head.appendChild(style);
+  </script>
+</body>
+</html>
