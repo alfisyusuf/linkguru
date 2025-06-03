@@ -18,25 +18,40 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            padding: 1rem;
         }
 
         .login-container {
             background: white;
             padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
             width: 100%;
             max-width: 400px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 
         .login-header {
             text-align: center;
             margin-bottom: 2rem;
+            padding-top: 1rem;
         }
 
         .login-header h1 {
             color: #333;
             margin-bottom: 0.5rem;
+            font-size: 1.8rem;
         }
 
         .login-header p {
@@ -59,14 +74,15 @@
             width: 100%;
             padding: 0.75rem;
             border: 2px solid #ddd;
-            border-radius: 5px;
+            border-radius: 8px;
             font-size: 1rem;
-            transition: border-color 0.3s ease;
+            transition: all 0.3s ease;
         }
 
         input[type="password"]:focus {
             outline: none;
             border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         .login-btn {
@@ -75,29 +91,45 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s ease;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
 
-        .login-btn:hover {
+        .login-btn:hover:not(:disabled) {
             transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
         }
 
         .login-btn:disabled {
-            opacity: 0.6;
+            opacity: 0.7;
             cursor: not-allowed;
             transform: none;
         }
 
-        .error-message {
-            color: #e74c3c;
+        .message {
             font-size: 0.9rem;
-            margin-top: 0.5rem;
+            margin-top: 1rem;
+            padding: 0.75rem;
+            border-radius: 5px;
             text-align: center;
             display: none;
+        }
+
+        .error-message {
+            background-color: #fee;
+            color: #c33;
+            border: 1px solid #fcc;
+        }
+
+        .success-message {
+            background-color: #efe;
+            color: #363;
+            border: 1px solid #cfc;
         }
 
         .loading {
@@ -122,28 +154,43 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        .attempts-warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 1.5rem;
+                margin: 1rem;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="login-container">
         <div class="login-header">
-            <h1>Login</h1>
+            <h1>🔐 Login</h1>
             <p>Masukkan password untuk melanjutkan</p>
         </div>
         
         <form id="loginForm">
             <div class="form-group">
                 <label for="password">Password:</label>
-                <input type="password" id="password" name="password" required>
+                <input type="password" id="password" name="password" required autocomplete="current-password">
             </div>
             
             <button type="submit" class="login-btn" id="loginBtn">
                 Masuk
             </button>
             
-            <div class="error-message" id="errorMessage">
-                Password salah! Silakan coba lagi.
-            </div>
+            <div class="message error-message" id="errorMessage"></div>
+            <div class="message success-message" id="successMessage"></div>
+            <div class="message attempts-warning" id="attemptsWarning"></div>
             
             <div class="loading" id="loading">
                 <div class="spinner"></div>
@@ -153,40 +200,44 @@
     </div>
 
     <script>
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyhRJqgWQ3l9N70TEr6JZ2z8kg2Vh6Y1Nb49y4oY5Nn7itdyuDPws04suVHlSMEWa5G/exec';
-        const REDIRECT_URL = 'https://linkguru.pages.dev/link';
+        // Ganti dengan URL Google Apps Script Anda
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyzTyvGpqQs2w4dMRLJn8GQJzUQ0TT6Qh1qfcI78wmmf_jvqyz7qzXw7I9Gae536Q/exec';
         
-        let validPasswords = [];
+        // Rate limiting
+        let attemptCount = 0;
+        const MAX_ATTEMPTS = 5;
+        const LOCKOUT_TIME = 5 * 60 * 1000; // 5 menit
         
-        // Fungsi untuk mengambil data password dari Google Apps Script
-        async function fetchPasswords() {
-            try {
-                const response = await fetch(GOOGLE_SCRIPT_URL);
-                const result = await response.json();
-                
-                if (result.data && Array.isArray(result.data)) {
-                    validPasswords = result.data.map(item => item.Password);
-                    console.log('Password berhasil dimuat:', validPasswords.length, 'password');
-                } else {
-                    console.error('Format data tidak valid:', result);
-                }
-            } catch (error) {
-                console.error('Error mengambil data password:', error);
-                // Fallback passwords jika gagal mengambil dari server
-                validPasswords = ['siapberkarya', 'alfiganteng'];
+        // Elemen DOM
+        const loginForm = document.getElementById('loginForm');
+        const passwordInput = document.getElementById('password');
+        const loginBtn = document.getElementById('loginBtn');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+        const attemptsWarning = document.getElementById('attemptsWarning');
+        const loading = document.getElementById('loading');
+        
+        // Fungsi untuk menampilkan pesan
+        function showMessage(element, message, duration = 5000) {
+            hideAllMessages();
+            element.textContent = message;
+            element.style.display = 'block';
+            
+            if (duration > 0) {
+                setTimeout(() => {
+                    element.style.display = 'none';
+                }, duration);
             }
         }
         
-        // Fungsi untuk memvalidasi password
-        function validatePassword(inputPassword) {
-            return validPasswords.includes(inputPassword);
+        function hideAllMessages() {
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+            attemptsWarning.style.display = 'none';
         }
         
         // Fungsi untuk menampilkan loading
         function showLoading(show) {
-            const loading = document.getElementById('loading');
-            const loginBtn = document.getElementById('loginBtn');
-            
             if (show) {
                 loading.style.display = 'block';
                 loginBtn.disabled = true;
@@ -198,57 +249,190 @@
             }
         }
         
-        // Fungsi untuk menampilkan error
-        function showError(show) {
-            const errorMessage = document.getElementById('errorMessage');
-            errorMessage.style.display = show ? 'block' : 'none';
+        // Fungsi untuk validasi password
+        async function validatePassword(password) {
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'validatePassword',
+                        password: password
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                return result;
+                
+            } catch (error) {
+                console.error('Validation error:', error);
+                return {
+                    success: false,
+                    message: 'Terjadi kesalahan koneksi. Silakan coba lagi.'
+                };
+            }
+        }
+        
+        // Fungsi untuk cek rate limiting
+        function checkRateLimit() {
+            const now = Date.now();
+            const lastAttempt = localStorage.getItem('lastFailedAttempt');
+            const storedAttempts = localStorage.getItem('attemptCount');
+            
+            if (lastAttempt && storedAttempts) {
+                const timeDiff = now - parseInt(lastAttempt);
+                attemptCount = parseInt(storedAttempts);
+                
+                if (attemptCount >= MAX_ATTEMPTS && timeDiff < LOCKOUT_TIME) {
+                    const remainingTime = Math.ceil((LOCKOUT_TIME - timeDiff) / 1000 / 60);
+                    showMessage(errorMessage, `Terlalu banyak percobaan gagal. Coba lagi dalam ${remainingTime} menit.`, 0);
+                    loginBtn.disabled = true;
+                    return false;
+                }
+                
+                if (timeDiff >= LOCKOUT_TIME) {
+                    attemptCount = 0;
+                    localStorage.removeItem('lastFailedAttempt');
+                    localStorage.removeItem('attemptCount');
+                }
+            }
+            
+            return true;
         }
         
         // Event listener untuk form submit
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        loginForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const passwordInput = document.getElementById('password');
-            const inputPassword = passwordInput.value.trim();
+            if (!checkRateLimit()) {
+                return;
+            }
             
-            if (!inputPassword) {
-                showError(true);
+            const password = passwordInput.value.trim();
+            
+            if (!password) {
+                showMessage(errorMessage, 'Password tidak boleh kosong!');
+                passwordInput.focus();
                 return;
             }
             
             showLoading(true);
-            showError(false);
+            hideAllMessages();
             
-            // Jika password belum dimuat, coba ambil dulu
-            if (validPasswords.length === 0) {
-                await fetchPasswords();
+            // Validasi password
+            const result = await validatePassword(password);
+            
+            showLoading(false);
+            
+            if (result.success) {
+                // Reset attempt count
+                attemptCount = 0;
+                localStorage.removeItem('lastFailedAttempt');
+                localStorage.removeItem('attemptCount');
+                
+                showMessage(successMessage, 'Login berhasil! Mengalihkan...', 2000);
+                
+                // Redirect setelah 1.5 detik
+                setTimeout(() => {
+                    window.location.href = result.redirectUrl || 'https://linkguru.pages.dev/link';
+                }, 1500);
+                
+            } else {
+                // Increment attempt count
+                attemptCount++;
+                localStorage.setItem('attemptCount', attemptCount.toString());
+                localStorage.setItem('lastFailedAttempt', Date.now().toString());
+                
+                showMessage(errorMessage, result.message || 'Password salah!');
+                
+                // Tampilkan peringatan jika mendekati batas
+                if (attemptCount >= 3 && attemptCount < MAX_ATTEMPTS) {
+                    const remaining = MAX_ATTEMPTS - attemptCount;
+                    showMessage(attemptsWarning, `Peringatan: ${remaining} percobaan tersisa sebelum akun dikunci.`);
+                } else if (attemptCount >= MAX_ATTEMPTS) {
+                    showMessage(errorMessage, 'Akun dikunci karena terlalu banyak percobaan gagal. Coba lagi dalam 5 menit.', 0);
+                    loginBtn.disabled = true;
+                }
+                
+                passwordInput.value = '';
+                passwordInput.focus();
+            }
+        });
+        
+        // Event listener untuk input password
+        passwordInput.addEventListener('input', function() {
+            hideAllMessages();
+            
+            // Re-enable button jika lockout sudah berakhir
+            if (loginBtn.disabled && checkRateLimit()) {
+                loginBtn.disabled = false;
+            }
+        });
+        
+        // Event listener untuk Enter key
+        passwordInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                loginForm.dispatchEvent(new Event('submit'));
+            }
+        });
+        
+        // Inisialisasi saat halaman dimuat
+        window.addEventListener('load', function() {
+            checkRateLimit();
+            passwordInput.focus();
+            
+            // Clear messages setelah 10 detik
+            setTimeout(() => {
+                hideAllMessages();
+            }, 10000);
+        });
+        
+        // Prevent right-click context menu (optional security measure)
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+        });
+        
+        // Prevent F12, Ctrl+Shift+I, Ctrl+U (optional - dapat di-bypass)
+        document.addEventListener('keydown', function(e) {
+            // F12
+            if (e.key === 'F12') {
+                e.preventDefault();
+                return false;
             }
             
-            // Simulasi delay untuk UX yang lebih baik
-            setTimeout(() => {
-                if (validatePassword(inputPassword)) {
-                    // Password benar, redirect ke link tujuan
-                    window.location.href = REDIRECT_URL;
-                } else {
-                    // Password salah
-                    showLoading(false);
-                    showError(true);
-                    passwordInput.value = '';
-                    passwordInput.focus();
-                }
-            }, 1000);
+            // Ctrl+Shift+I (Developer Tools)
+            if (e.ctrlKey && e.shiftKey && e.key === 'I') {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Ctrl+U (View Source)
+            if (e.ctrlKey && e.key === 'u') {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Ctrl+Shift+C (Inspect Element)
+            if (e.ctrlKey && e.shiftKey && e.key === 'C') {
+                e.preventDefault();
+                return false;
+            }
         });
         
-        // Muat password saat halaman dimuat
-        window.addEventListener('load', function() {
-            fetchPasswords();
-            document.getElementById('password').focus();
-        });
+        // Console warning (optional)
+        console.log('%cSTOP!', 'color: red; font-size: 50px; font-weight: bold;');
+        console.log('%cIni adalah fitur browser yang ditujukan untuk developer. Jika seseorang menyuruh Anda menyalin dan menempel sesuatu di sini, kemungkinan besar itu adalah penipuan.', 'color: red; font-size: 16px;');
         
-        // Hide error saat user mulai mengetik
-        document.getElementById('password').addEventListener('input', function() {
-            showError(false);
-        });
+        // Clear console periodically (optional)
+        setInterval(() => {
+            console.clear();
+        }, 5000);
     </script>
 </body>
 </html>
